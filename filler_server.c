@@ -7,48 +7,86 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include "filler_functions.h"
+#include "bot_functions.h"
 
 void die(const char *message) { perror(message); exit(1); }
 
-void randomize_board(int *board) {
-    for (int i = 0; i < 7 * 8; i++)
-        board[i] = random() % 6;
+int num_gen(int exclude_1, int exclude_2) 
+{
+    int num;
+    if (exclude_1 == exclude_2)
+        return exclude_1 <= (num = random() % 5) ? num + 1 : num;
+    else {
+        int smaller_exclude;
+        int larger_exclude;
+        if (exclude_1 > exclude_2) {
+            smaller_exclude = exclude_2;
+            larger_exclude = exclude_1;
+        }
+        else {
+            smaller_exclude = exclude_1;
+            larger_exclude = exclude_2;
+        }
+        
+        if ((num = random() % 4) < smaller_exclude && num < larger_exclude)
+            return num;
+        else if (smaller_exclude <= num && num + 1 < larger_exclude)
+            return num + 1;
+        else
+            return num + 2;
+    } 
 }
 
-void play_game_with_player(int clntsock, int *board, 
-                           int *territory, int *territory_size, 
-                           int *opp_territory, int *opp_territory_size) {
-    send(clntsock, board, 7 * 8, 0);
-    
-    //determine who goes first
-    int buf[4096];
-//     buf[0] = random() * 2; 
-//     recv(clntsock, buf, sizeof(char), 0);
-    
-//     if (buf[0])
-//         printf("You ");
-//     else
-//         printf("Opponent ");
-//     printf("goes first.\n");
-    
-    int still_playing = 1;
-    int opp_choice;
-    int my_choice;
-    while (still_playing && recv(clntsock, buf, sizeof(int), 0)) {
-        //print board
-        opp_choice = buf[0];
-        make_move(board, opp_territory, opp_territory_size, opp_choice);
-        
-        //print board
-        printf("What is your move?\n");
-        scanf("%d", &my_choice);
-        make_move(board, territory, territory_size, my_choice);
+void randomize_board(int *board) 
+{
+    srandom(time(NULL));
+    board[0] = random() % 6;
+    for (int col = 1; col < 8; col++) 
+        board[col] = num_gen(board[col - 1], board[col - 1]);
+    for (int row = 1; row < 7; row++) {
+        board[row * 8] = num_gen(board[(row - 1) * 8], board[(row - 1) * 8]);
+        for (int col = 1; col < 8; col++) 
+            board[row * 8 + col] = num_gen(board[(row - 1) * 8 + col], 
+                                           board[row * 8 + col - 1]);
     }
 }
 
-void player_vs_player(int *board, int *territory, int *territory_size, 
-                      int *opp_territory, int *opp_territory_size) {
+void play_game_with_player(int clntsock, int *board, 
+                           int *tiles, int *tiles_size_ptr, 
+                           int *opp_tiles, int *opp_tiles_size_ptr) 
+{
+    int choice;
+    
+    print_board(board, 0);
+    send(clntsock, board, sizeof(int) * 7 * 8, 0);
+    printf("Waiting for client response . . .\n");
+    while (recv(clntsock, &choice, sizeof(int), 0)) {
+        make_move(board, opp_tiles, opp_tiles_size_ptr, ntohl(choice));
+        print_move_chosen(ntohl(choice), 1);
+        send(clntsock, board, sizeof(int) * 7 * 8, 0);
+        
+        if (*tiles_size_ptr + *opp_tiles_size_ptr == 7 * 8)
+            break;
+        
+        print_board(board, 0);
+        move_prompt(board[6 * 8], board[7], &choice);
+        print_move_chosen(choice, 0);
+        make_move(board, tiles, tiles_size_ptr, choice);
+        print_board(board, 0);
+        
+        if (*tiles_size_ptr + *opp_tiles_size_ptr == 7 * 8)
+            break;
+        
+        send(clntsock, board, sizeof(int) * 7 * 8, 0);
+        printf("Waiting for client response . . .\n");
+    }
+}
+
+void player_vs_player(int *board, int *tiles, int *tiles_size_ptr, 
+                      int *opp_tiles, int *opp_tiles_size_ptr) 
+{
     printf("What is the port on which you would like to host the server?\n");
     unsigned short port;
     scanf("%hu", &port);
@@ -82,42 +120,41 @@ void player_vs_player(int *board, int *territory, int *territory_size,
             die("accept failed");
         char *client_ip = inet_ntoa(clntaddr.sin_addr);
         printf("Connection started from: %s\n", client_ip);
-
-        play_game_with_player(clntsock, board, territory, territory_size, 
-                              opp_territory, opp_territory_size);
-
+        play_game_with_player(clntsock, board, tiles, tiles_size_ptr, 
+                              opp_tiles, opp_tiles_size_ptr);
         fprintf(stderr, "Connection terminated from: %s\n", client_ip);
     }
 }
 
-void player_vs_bot(int *board, int *territory, int *territory_size, 
-                   int *opp_territory, int *opp_territory_size) {
-    
-}
-
-
-
-int main() {
-    srandom(time(NULL));
-    
-    printf("Type 0 for Player vs. Bot\nType 1 for Player vs. Player\n");
-    int mode;
-    scanf("%d", &mode);
-    
+int main(int argc, char **argv) 
+{    
     int board[7 * 8]; 
-    int territory[7 * 8];
-    int territory_size = 0;
-    int opp_territory[7 * 8];
-    int opp_territory_size = 0;
-    memset(territory, -1, sizeof(territory));
-        
+    int tiles[7 * 8];
+    int tiles_size = 1;
+    int opp_tiles[7 * 8];
+    int opp_tiles_size = 1;
+    
     randomize_board(board);
-    print_board(board);
+    memset(tiles, 0, sizeof(tiles));
+    memset(opp_tiles, 0, sizeof(opp_tiles));
+    tiles[6 * 8] = 1;
+    opp_tiles[7] = 1;
+    
+    char buf[4096];
+    char mode;
+    while (1) {
+        printf("Type 0 for Player vs. Bot\nType 1 for Player vs. Player\n");
+        
+        scanf("%s", buf);
+        if (strlen(buf) == 1) {
+            mode = atoi(buf);
+            if (0 <= mode && mode <= 1) 
+                break;
+        }
+    }
     
     if (mode) 
-        player_vs_player(board, territory, &territory_size, 
-                         opp_territory, &opp_territory_size);
+        player_vs_player(board, tiles, &tiles_size, opp_tiles, &opp_tiles_size);
     else 
-        player_vs_bot(board, territory, &territory_size, 
-                      opp_territory, &opp_territory_size);
+        player_vs_bot(board, tiles, &tiles_size, opp_tiles, &opp_tiles_size);
 }
