@@ -30,13 +30,13 @@ void minimax(double *tree, int position, int depth, int to_maximize)
 {
     if (depth == 0) 
         return;
-    
+    double eval;
     if (to_maximize) {
         double max_eval = -DBL_MAX;
         for (int i = 0; i < 4; i++) {
             minimax(tree, position * 4 + 1 + i, depth - 1 , 0);
-            max_eval = max_eval > tree[position * 4 + 1 + i] ? 
-                       max_eval : tree[position * 4 + 1 + i];
+            eval = tree[position * 4 + 1 + i];
+            max_eval = max_eval > eval ? max_eval : eval;
         }
         tree[position] = max_eval;
     }
@@ -44,8 +44,8 @@ void minimax(double *tree, int position, int depth, int to_maximize)
         double min_eval = DBL_MAX;
         for (int i = 0; i < 4; i++) {
             minimax(tree, position * 4 + 1 + i, depth - 1 , 1);
-            min_eval = min_eval < tree[position * 4 + 1 + i] ? 
-                       min_eval : tree[position * 4 + 1 + i];
+            eval = tree[position * 4 + 1 + i];
+            min_eval = min_eval < eval ? min_eval : eval;
         }
         tree[position] = min_eval;
     }
@@ -59,7 +59,7 @@ void get_move_bot(int *board, int *tiles, int *tiles_size_ptr, int *opp_tiles,
     init_board_state(init_bdst_ptr, board, tiles, *tiles_size_ptr,
                      opp_tiles, *opp_tiles_size_ptr);
     enqueue(current, init_bdst_ptr);
-    
+
     for (int i = 0; i < layers - 1; i++) {
         while(!queue_is_empty(current)) {
             struct Board_state *bdst_ptr = dequeue(current);
@@ -84,7 +84,7 @@ void get_move_bot(int *board, int *tiles, int *tiles_size_ptr, int *opp_tiles,
         current = next;
         next = temp_queue_ptr;
     }
-    
+
     int tree_size = (1 - power(4, layers)) / (1 - 4);
     double tree[tree_size];
     
@@ -93,10 +93,7 @@ void get_move_bot(int *board, int *tiles, int *tiles_size_ptr, int *opp_tiles,
         tree[i] = ((double) bdst_ptr->opp_tiles_size) / 
                   (bdst_ptr->opp_tiles_size + bdst_ptr->tiles_size);  
         free(bdst_ptr);
-    }    
-    delete_queue(current);
-    delete_queue(next);
-    
+    }
     minimax(tree, 0, layers - 1, 1);
     int i;
     int j = 1;
@@ -108,7 +105,7 @@ void get_move_bot(int *board, int *tiles, int *tiles_size_ptr, int *opp_tiles,
             j++;
         }
     }
-    *choice = i;    
+    *choice = i;  
 } 
 
 void player_vs_bot(int *board, int *tiles, int *tiles_size_ptr, 
@@ -132,40 +129,21 @@ void player_vs_bot(int *board, int *tiles, int *tiles_size_ptr,
         
         print_board(board, 0);
         
-        printf("\n%d %d\n", *tiles_size_ptr, *opp_tiles_size_ptr);
-        printf("\nSizes : %d %d\n", *tiles_size_ptr, *opp_tiles_size_ptr);
-        printf("\nTiles : ");
-        for (int i = 0; i < 7 * 8; i++) {
-            if (tiles[i] != 0) 
-                printf(" %d ", i);
-        }
-        printf("\nOpp_Tiles : ");
-        for (int i = 0; i < 7 * 8; i++) { 
-            if (opp_tiles[i] != 0) 
-                printf(" %d ", i);
-        }
-        printf("\n");
-        
         move_prompt(board[6 * 8], board[7], &choice);
         print_move_chosen(choice, 0);
         make_move(board, tiles, tiles_size_ptr, choice);
         print_board(board, 0);
         
-        printf("\n%d %d\n", *tiles_size_ptr, *opp_tiles_size_ptr);
-        printf("\nSizes : %d %d\n", *tiles_size_ptr, *opp_tiles_size_ptr);
-        printf("\nTiles : ");
-        for (int i = 0; i < 7 * 8; i++) {
-            if (tiles[i] != 0) 
-                printf(" %d ", i);
-        }
-        printf("\nOpp_Tiles : ");
-        for (int i = 0; i < 7 * 8; i++) { 
-            if (opp_tiles[i] != 0) 
-                printf(" %d ", i);
-        }
-        printf("\n");
-        
         if (*tiles_size_ptr + *opp_tiles_size_ptr == 7 * 8)
             break;
     }
+    print_board(board, 0);
+    if (*tiles_size_ptr > *opp_tiles_size_ptr) 
+        printf("Player wins!\n");
+    else if (*opp_tiles_size_ptr > *tiles_size_ptr)
+        printf("Bot wins!\n");
+    else 
+        printf("Tie!\n");
+    delete_queue(&current);
+    delete_queue(&next);
 }

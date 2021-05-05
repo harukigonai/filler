@@ -41,9 +41,9 @@ void *dequeue(struct Queue *queue_ptr)
 
 int queue_size(struct Queue *queue_ptr)
 {
-    int i;
+    int i = 0;
     struct Node *tmp = queue_ptr->head->nxt;
-    for (i = 0; tmp->nxt != NULL; i++) 
+    for (; tmp->nxt != NULL; i++)
         tmp = tmp->nxt;
     return i;
 }
