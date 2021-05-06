@@ -112,12 +112,13 @@ void player_vs_bot(int *board, int *tiles, int *tiles_size_ptr,
                    int *opp_tiles, int *opp_tiles_size_ptr) 
 {
     int choice;
+    reset_game(board, tiles, opp_tiles, tiles_size_ptr, opp_tiles_size_ptr);
     
-    struct Queue current;
+    struct Queue current, next;
     init_queue(&current);
-    struct Queue next;
     init_queue(&next);
     print_board(board, 0);
+    
     while (1) {
         get_move_bot(board, tiles, tiles_size_ptr, opp_tiles, 
                      opp_tiles_size_ptr, &current, &next, 3, &choice);
