@@ -1,6 +1,6 @@
 <h1>Filler</h1>
 
-* Inspired by Filler, a game from iOS' Game Pidgeon App.
+* Inspired by Filler, a game from the iOS Game Pidgeon App.
 * Written in C.
 * Player vs. player mode written using Sockets API.
 * Modified to include player vs. bot mode, in which the bot makes decisions using the minimax algorithm.
