@@ -10,14 +10,13 @@ struct Board_state {
     int opp_tiles_size;
 };
 
-void init_board_state(struct Board_state *board_state_ptr, int *board, 
-                      int *tiles, int tiles_size, int *opp_tiles, 
-                      int opp_tiles_size);
-
+void init_board_state(struct Board_state *bdst_ptr, int *board, int *tiles, 
+                      int tiles_size, int *opp_tiles, int opp_tiles_size);
+int power(int base, int exponent);
+void minimax(double *tree, int position, int depth, int to_maximize);
 void get_move_bot(int *board, int *tiles, int *tiles_size_ptr, int *opp_tiles, 
-                  int *opp_tiles_size_ptr, struct Queue *current, struct Queue *next,
-                  int layers, int *choice);
-
+                  int *opp_tiles_size_ptr, struct Queue *current, 
+                  struct Queue *next, int layers, int *choice);
 void player_vs_bot(int *board, int *tiles, int *tiles_size_ptr, 
                    int *opp_tiles, int *opp_tiles_size_ptr);
 
