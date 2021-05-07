@@ -28,12 +28,6 @@ int socket_bind_listen(unsigned short port)
 
     if (listen(servsock, 5) < 0)
         die("listen failed");
-    
-    char sZhostName[255];
-    gethostname(sZhostName,255);
-    struct hostent *host_entry;
-    host_entry = gethostbyname(sZhostName);
-    printf("Listening on IP: %s\n", inet_ntoa (*(struct in_addr *)*host_entry->h_addr_list));
         
     return servsock;
 }
