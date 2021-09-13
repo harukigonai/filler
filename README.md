@@ -2,8 +2,8 @@
 
 * Inspired by Filler, a game from the iOS Game Pidgeon App.
 * Written in C.
-* Player vs. player mode written using Sockets API.
-* Modified to include player vs. bot mode, in which the bot makes decisions using the minimax algorithm.
+* Player vs. Player mode written using Sockets API.
+* Modified to include Player vs. Bot mode, in which the bot makes decisions using the minimax algorithm.
 
 <h2>How Do I Run It?</h2>
 
