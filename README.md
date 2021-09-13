@@ -7,6 +7,7 @@
 
 <h2>How Do I Run It?</h2>
 
+* Navigate to project directory.
 * Type "make" to build the project. 
 * Execute the created "filler-server" program to host a Filler server or to play against a bot.
 * Execute the created "filler-client" program to connect to a Filler server.
